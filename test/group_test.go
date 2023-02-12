@@ -44,6 +44,7 @@ func TestGetFromGroup(t *testing.T) {
 		if view, err := g.Get(k); err != nil || (*view).String() != v {
 			t.Fatalf("failed to get value of Tom")
 		} // load from callback function
+		fmt.Println("print counts", loadCounts)
 		if _, err := g.Get(k); err != nil || loadCounts[k] > 1 {
 			t.Fatalf("cache %s miss", k)
 		}
