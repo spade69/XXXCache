@@ -2,8 +2,10 @@ package group
 
 import (
 	"fmt"
+	"log"
 	"sync"
 
+	"github.com/spade69/xxxcache/communication"
 	"github.com/spade69/xxxcache/core"
 )
 
@@ -14,6 +16,9 @@ type Group struct {
 	getter Getter
 	// concurrent safe cache
 	mainCache core.Scache
+	// peers
+	peers communication.PeerPicker
+	//
 }
 
 // Getter is a interface used to get data from different datasource
@@ -94,4 +99,43 @@ func (g *Group) GetLocally(key string) (*core.ByteView, error) {
 
 func (g *Group) PopulateCache(key string, value core.ByteView) {
 	g.mainCache.Set(key, value)
+}
+
+// Register HTTPPool  into Group which is peers(peer picker)
+func (g *Group) RegisterPeers(peers communication.PeerPicker) {
+	if g.peers != nil {
+		panic("RegisterPeers call more than once")
+	}
+	g.peers = peers
+}
+
+// load key using PickPeer to find node and load data
+func (g *Group) load(key string) (value *core.ByteView, err error) {
+	if g.peers == nil {
+		err := fmt.Errorf("peers not exist")
+		return nil, err
+	}
+	// 1. first pick peer
+	if peer, ok := g.peers.PickPeer(key); ok {
+		// 2. try to get cache from peer
+		bv, err := g.getFromPeer(peer, key)
+		if err != nil {
+			log.Println("[GeeCache] Failed to get from peer", err)
+			return nil, err
+		}
+		return &bv, nil
+	}
+	// no cache found, read from local, if local not exist, then
+	// avoke call from remote
+	return g.GetLocally(key)
+}
+
+// load data from peer, get peer first and get byte from peer
+func (g *Group) getFromPeer(peer communication.PeerGetter, key string) (core.ByteView, error) {
+	bytes, err := peer.Get(g.name, key)
+	if err != nil {
+		return core.ByteView{}, err
+	}
+	bv := core.NewByteView(bytes)
+	return bv, nil
 }

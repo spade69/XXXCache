@@ -1,6 +1,7 @@
 package consistenthash
 
 import (
+	"fmt"
 	"hash/crc32"
 	"sort"
 	"strconv"
@@ -42,7 +43,7 @@ func (m *Map) Add(keys ...string) {
 		// one key --> m.replicas virtual node.
 		for i := 0; i < m.replicas; i++ {
 			// vnode = i+ key to means nvnode keys,
-			// m.hash() to calculate vnode's val
+			// m.hash() to calculate vnode's val: 1-->1X, 2-->2X
 			hash := int(m.hash([]byte(strconv.Itoa(i) + key)))
 			m.keys = append(m.keys, hash)
 			// add vnode hash to hashmap
@@ -67,5 +68,10 @@ func (m *Map) Get(key string) string {
 	idx := sort.Search(len(m.keys), func(i int) bool {
 		return m.keys[i] >= hash
 	})
+	fmt.Println("Get hash is", hash, "idx is", idx, "len is ", len(m.keys))
 	return m.hashMap[m.keys[idx%len(m.keys)]]
+}
+
+func (m *Map) GetKeys() []int {
+	return m.keys
 }
