@@ -39,8 +39,6 @@ const (
 	defaultReplicas = 50
 )
 
-var _ communication.PeerPicker = (*HTTPPool)(nil)
-
 // NewHTTPPool initializes an HTTP pool of peers.
 func NewHTTPPool(self string) *HTTPPool {
 	return &HTTPPool{
@@ -51,7 +49,7 @@ func NewHTTPPool(self string) *HTTPPool {
 }
 
 func (p *HTTPPool) Log(format string, v ...interface{}) {
-	log.Printf("[Server %s] %s", p.self, fmt.Sprintf(format, v...))
+	log.Printf("[Server %s] %s \n", p.self, fmt.Sprintf(format, v...))
 }
 
 // 创建任意类型 server，并实现 ServeHTTP 方法。
@@ -73,12 +71,12 @@ func (p *HTTPPool) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	groupName := parts[0]
 	// get key of this group, group means a cache
 	key := parts[1]
+	fmt.Println("running here for groupName", groupName)
 	g := GetGroup(groupName)
 	if g == nil {
 		http.Error(w, "no such group:"+groupName, http.StatusNotFound)
 		return
 	}
-
 	view, err := g.Get(key)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -112,11 +110,14 @@ func (p *HTTPPool) PickPeer(key string) (communication.PeerGetter, bool) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	if peer := p.peers.Get(key); peer != "" && peer != p.self {
-		log.Printf("Pick peer %s", peer)
+		p.Log("Pick peer %s", peer)
+		fmt.Println("Pick peer ", peer)
 		return p.httpGetters[peer], true
 	}
 	return nil, false
 }
+
+var _ communication.PeerPicker = (*HTTPPool)(nil)
 
 // baseURL --> remote endpoint
 // use http.Get to retrieve return value

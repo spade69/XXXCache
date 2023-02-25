@@ -72,15 +72,11 @@ func (g *Group) Get(key string) (*core.ByteView, error) {
 		return nil, fmt.Errorf("key is required")
 	}
 	if v, ok := g.mainCache.Get(key); ok {
-		fmt.Println("cache hit!")
+		log.Println("[XXXCache] hit")
 		return v, nil
 	}
 	// load key from local if fail
 	return g.Load(key)
-}
-
-func (g *Group) Load(key string) (*core.ByteView, error) {
-	return g.GetLocally(key)
 }
 
 // GetLocally Get data from user define data source
@@ -110,7 +106,7 @@ func (g *Group) RegisterPeers(peers communication.PeerPicker) {
 }
 
 // load key using PickPeer to find node and load data
-func (g *Group) load(key string) (value *core.ByteView, err error) {
+func (g *Group) Load(key string) (value *core.ByteView, err error) {
 	if g.peers == nil {
 		err := fmt.Errorf("peers not exist")
 		return nil, err
